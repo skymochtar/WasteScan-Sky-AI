@@ -1,0 +1,70 @@
+name: image_recognition
+description: WasteScan Sky AI - Aplikasi Deteksi Sampah Cerdas
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  get: ^4.6.6
+
+  # Camera & Machine Learning
+  camera: ^0.10.6
+  tflite_flutter: ^0.11.0
+
+  # Image Processing & Gallery
+  image: ^4.1.3
+  image_picker: ^1.0.7
+  
+  # Utilities (Path & URL)
+  path: ^1.9.1
+  url_launcher: ^6.3.2
+  
+  # UI Fonts
+  google_fonts: ^6.3.2
+
+  # Dependencies 
+  dtd: ^4.0.0
+  json_rpc_2: ^4.0.0
+  stack_trace: ^1.12.1
+  web: ^1.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  # Linter 
+  flutter_lints: ^3.0.0
+
+  # GENERATOR LOGO & SPLASH SCREEN 
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.3.7
+
+# --- KONFIGURASI IKON APLIKASI (Menu HP) ---
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/logo.png"
+  min_sdk_android: 21
+
+# --- KONFIGURASI SPLASH SCREEN (Loading Awal) ---
+flutter_native_splash:
+  color: "#0B4F56" # Warna Teal (Hijau Tosca)
+  image: "assets/logo.png"
+  android_12:
+    image: "assets/logo.png"
+    color: "#009688"
+
+flutter:
+  uses-material-design: true
+  
+  # ASET FILE (Model, Label, & Logo)
+  assets:
+    - assets/model.tflite
+    - assets/labels.txt
+    - assets/logo.png
