@@ -1,19 +1,19 @@
-import 'dart:io'; 
+import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image/image.dart' as img;
 import 'package:tflite_flutter/tflite_flutter.dart';
-import 'package:image_picker/image_picker.dart'; 
+import 'package:image_picker/image_picker.dart';
 
 class ScanController extends GetxController {
   late CameraController cameraController;
   late List<CameraDescription> cameras;
 
   var isCameraInitialized = false.obs;
-  var label = "".obs;
+  var label = "Mencari...".obs;
   var confidence = 0.0.obs;
-  var description = "".obs;
+  var description = "Arahkan kamera ke objek sampah dengan jelas.".obs;
 
   var selectedImagePath = "".obs;
 
@@ -25,11 +25,11 @@ class ScanController extends GetxController {
     "Plastik":
         "Jenis: Sampah Anorganik (Plastik).\n\nPenjelasan: Material sintetis yang sulit terurai secara alami (bisa ratusan tahun).\n\nSaran: Cuci bersih, remas agar hemat tempat, dan setor ke Bank Sampah.",
     "Kertas":
-        "Jenis: Sampah Anorganik (Kertas/Kardus).\n\nPenjelasan: Berbahan dasar serat kayu atau selulosa.\n\nSaran: Pastikan kering dan tidak berminyak. Sangat bernilai jual di pengepul barang bekas.",
+        "Jenis: Sampah Anorganik (Kertas/Kardus).\n\nPenjelasan: Berbahan dasar serat kayu atau selulosa.\n\nSaran: Pastikan kering dan tidak berminyak. Sangat bernilai jual di pengepul barang bekas atau ke bank sampah terdekat.",
     "Organik":
         "Jenis: Sampah Organik (Sisa Hayati).\n\nPenjelasan: Berasal dari sisa makhluk hidup yang mudah membusuk.\n\nSaran: Jangan dibuang ke TPA! Olah menjadi pupuk kompos atau pakan ternak.",
     "Logam":
-        "Jenis: Sampah Anorganik (Logam).\n\nPenjelasan: Berbahan dasar metal, aluminium, besi, atau seng.\n\nSaran: Bernilai ekonomis tinggi. Pisahkan dan jual ke pengepul.",
+        "Jenis: Sampah Anorganik (Logam).\n\nPenjelasan: Berbahan dasar metal, aluminium, besi, atau seng.\n\nSaran: Bernilai ekonomis tinggi. Pisahkan dan jual ke pengepul atau ke bank sampah terdekat.",
   };
 
   @override
@@ -55,7 +55,7 @@ class ScanController extends GetxController {
       if (cameras.isNotEmpty) {
         cameraController = CameraController(
           cameras[0],
-          ResolutionPreset.medium,
+          ResolutionPreset.low, // DIUBAH KE LOW AGAR RINGAN & TIDAK DROP BUFFER
           enableAudio: false,
           imageFormatGroup: ImageFormatGroup.yuv420,
         );
@@ -65,10 +65,10 @@ class ScanController extends GetxController {
 
         int frameCount = 0;
         cameraController.startImageStream((CameraImage image) {
-          // Hanya proses jika TIDAK sedang menampilkan gambar galeri
           if (selectedImagePath.value.isEmpty) {
             frameCount++;
-            if (frameCount % 30 == 0 && !isWorking) {
+            // Proses frame dengan jeda teratur
+            if (frameCount % 15 == 0 && !isWorking) {
               isWorking = true;
               runInferenceCamera(image);
             }
@@ -80,6 +80,7 @@ class ScanController extends GetxController {
     }
   }
 
+  // --- FUNGSI MEMUAT MODEL AI ---
   Future<void> initTFLite() async {
     try {
       _interpreter = await Interpreter.fromAsset('assets/model.tflite');
@@ -96,24 +97,22 @@ class ScanController extends GetxController {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
     if (image != null) {
-      selectedImagePath.value = image.path; // Simpan path gambar
+      selectedImagePath.value = image.path;
       isWorking = true;
-      await runInferenceFile(image.path); // Jalankan deteksi file
+      await runInferenceFile(image.path);
     }
   }
 
-  // Reset agar kembali ke mode kamera live
   void resetToCamera() {
     selectedImagePath.value = "";
-    label.value = "";
-    description.value = "";
+    label.value = "Mencari...";
+    description.value = "Arahkan kamera ke objek sampah dengan jelas.";
     confidence.value = 0.0;
   }
 
   // --- LOGIC DETEKSI KHUSUS FILE (GALERI) ---
   Future<void> runInferenceFile(String path) async {
     try {
-      // 1. Baca File Gambar
       final imageData = File(path).readAsBytesSync();
       img.Image? decodedImage = img.decodeImage(imageData);
 
@@ -124,7 +123,6 @@ class ScanController extends GetxController {
       img.Image resizedImage =
           img.copyResize(decodedImage, width: inputSize, height: inputSize);
 
-      // 3. Siapkan Input (RGB)
       var input = List.generate(
           1,
           (i) => List.generate(
@@ -146,7 +144,6 @@ class ScanController extends GetxController {
                     }
                   })));
 
-      // 4. Jalankan Model
       await _runModelOnInput(input);
     } catch (e) {
       print("Error Gallery Inference: $e");
@@ -155,7 +152,7 @@ class ScanController extends GetxController {
     }
   }
 
-  // --- LOGIC DETEKSI KHUSUS KAMERA (STREAM) ---
+  // --- LOGIC DETEKSI KHUSUS KAMERA ---
   Future<void> runInferenceCamera(CameraImage cameraImage) async {
     if (_interpreter == null || _labels == null) {
       isWorking = false;
@@ -167,7 +164,10 @@ class ScanController extends GetxController {
       int inputSize = inputTensor.shape[1];
 
       img.Image? convertedImage = _convertYUV420ToImage(cameraImage);
-      if (convertedImage == null) return;
+      if (convertedImage == null) {
+        isWorking = false;
+        return;
+      }
 
       img.Image resizedImage =
           img.copyResize(convertedImage, width: inputSize, height: inputSize);
@@ -201,7 +201,6 @@ class ScanController extends GetxController {
     }
   }
 
-  // --- LOGIC UMUM JALANKAN AI (Dipakai Camera & Galeri) ---
   Future<void> _runModelOnInput(List<dynamic> input) async {
     var outputTensor = _interpreter!.getOutputTensor(0);
     var outputBuffer;
@@ -234,43 +233,66 @@ class ScanController extends GetxController {
       }
     }
 
-    if (maxIndex != -1 && maxScore > 0.5) {
+    // Threshold disesuaikan ke 0.70 (70%)
+    if (maxIndex != -1 && maxScore >= 0.70) {
       String detectedLabel = _labels![maxIndex];
       String cleanLabel = detectedLabel.replaceAll(RegExp(r'^[0-9\s]+'), '');
       label.value = cleanLabel;
       description.value = dataDeskripsi[cleanLabel] ?? "Tidak ada deskripsi.";
       confidence.value = maxScore;
     } else {
-      label.value = "Tidak Dikenali";
-      description.value = "Objek tidak jelas.";
-      confidence.value = maxScore;
+      if (selectedImagePath.value.isNotEmpty) {
+        label.value = "Tidak Dikenali";
+        description.value =
+            "Objek tidak terdeteksi sebagai Plastik, Kertas, Logam, atau Organik. Pastikan foto terlihat jelas.";
+      } else {
+        label.value = "Mencari...";
+        description.value = "Arahkan kamera ke objek sampah dengan jelas.";
+      }
+      confidence.value = 0.0;
     }
   }
 
+  // FUNGSI KONVERSI YUV420 YANG AMAN & CEPAT
   img.Image? _convertYUV420ToImage(CameraImage cameraImage) {
     try {
       final int width = cameraImage.width;
       final int height = cameraImage.height;
-      final int uvRowStride = cameraImage.planes[1].bytesPerRow;
-      final int? uvPixelStride = cameraImage.planes[1].bytesPerPixel;
+
+      final uvRowStride = cameraImage.planes[1].bytesPerRow;
+      final uvPixelStride = cameraImage.planes[1].bytesPerPixel ?? 1;
+
       final image = img.Image(width: width, height: height);
-      for (int w = 0; w < width; w++) {
-        for (int h = 0; h < height; h++) {
-          final int uvIndex =
-              uvPixelStride! * (w / 2).floor() + uvRowStride * (h / 2).floor();
-          final int index = h * width + w;
-          final y = cameraImage.planes[0].bytes[index];
-          final u = cameraImage.planes[1].bytes[uvIndex];
-          final v = cameraImage.planes[2].bytes[uvIndex];
-          int r = (y + v * 1.432 - 179.456).round().clamp(0, 255);
-          int g =
-              (y - u * 0.39465 - v * 0.58060 + 135.459).round().clamp(0, 255);
-          int b = (y + u * 2.03211 - 276.836).round().clamp(0, 255);
-          image.setPixelRgb(w, h, r, g, b);
+
+      for (int y = 0; y < height; y++) {
+        final int uvRow = y >> 1;
+        for (int x = 0; x < width; x++) {
+          final int uvCol = x >> 1;
+          final int uvIndex = uvRow * uvRowStride + uvCol * uvPixelStride;
+
+          final int yIndex = y * width + x;
+          if (yIndex >= cameraImage.planes[0].bytes.length ||
+              uvIndex >= cameraImage.planes[1].bytes.length ||
+              uvIndex >= cameraImage.planes[2].bytes.length) {
+            continue;
+          }
+
+          final int yp = cameraImage.planes[0].bytes[yIndex];
+          final int up = cameraImage.planes[1].bytes[uvIndex];
+          final int vp = cameraImage.planes[2].bytes[uvIndex];
+
+          int r = (yp + (1.370705 * (vp - 128))).round().clamp(0, 255);
+          int g = (yp - (0.337633 * (up - 128)) - (0.698001 * (vp - 128)))
+              .round()
+              .clamp(0, 255);
+          int b = (yp + (1.732446 * (up - 128))).round().clamp(0, 255);
+
+          image.setPixelRgb(x, y, r, g, b);
         }
       }
       return image;
     } catch (e) {
+      print("Error convert YUV: $e");
       return null;
     }
   }

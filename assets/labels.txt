@@ -1,4 +1,4 @@
-Organik
-Plastik
-Kertas
-Logam
+0 Plastik
+1 Logam
+2 Kertas
+3 Organik

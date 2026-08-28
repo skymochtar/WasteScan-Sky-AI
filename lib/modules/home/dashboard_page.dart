@@ -29,14 +29,14 @@ class DashboardPage extends StatelessWidget {
         ],
       )),
       
-      
       bottomNavigationBar: Obx(() => NavigationBar(
         height: 70,
         elevation: 0,
         selectedIndex: controller.tabIndex.value,
         onDestinationSelected: controller.changeTabIndex,
         backgroundColor: Colors.white,
-        indicatorColor: Colors.teal.withOpacity(0.2),
+        // PERBAIKAN: Menggunakan withValues agar tidak ada warning garis biru di VS Code
+        indicatorColor: Colors.teal.withValues(alpha: 0.2), 
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),

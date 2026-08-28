@@ -1,4 +1,4 @@
-import 'dart:io'; 
+import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -11,7 +11,8 @@ class ScanPage extends StatefulWidget {
   State<ScanPage> createState() => _ScanPageState();
 }
 
-class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin {
+class _ScanPageState extends State<ScanPage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animController;
 
   @override
@@ -39,7 +40,6 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
             children: [
               // 1. LAYER TAMPILAN (Kamera atau Gambar Galeri)
               Obx(() {
-                // KONDISI A: User sudah pilih gambar dari galeri
                 if (controller.selectedImagePath.value.isNotEmpty) {
                   return Container(
                     width: double.infinity,
@@ -47,12 +47,10 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
                     color: Colors.black,
                     child: Image.file(
                       File(controller.selectedImagePath.value),
-                      fit: BoxFit.contain, // Agar gambar pas di layar
+                      fit: BoxFit.contain,
                     ),
                   );
-                } 
-                // KONDISI B: Mode Kamera Live
-                else if (controller.isCameraInitialized.value && 
+                } else if (controller.isCameraInitialized.value &&
                     controller.cameraController.value.isInitialized) {
                   return SizedBox(
                     height: double.infinity,
@@ -71,8 +69,9 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
                     animation: _animController,
                     builder: (context, child) {
                       return Positioned(
-                        top: MediaQuery.of(context).size.height * 0.1 + 
-                             (_animController.value * (MediaQuery.of(context).size.height * 0.5)),
+                        top: MediaQuery.of(context).size.height * 0.1 +
+                            (_animController.value *
+                                (MediaQuery.of(context).size.height * 0.5)),
                         left: 20,
                         right: 20,
                         child: Container(
@@ -80,7 +79,9 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
                           decoration: BoxDecoration(
                             color: Colors.tealAccent,
                             boxShadow: [
-                              BoxShadow(color: Colors.tealAccent.withOpacity(0.5), blurRadius: 10)
+                              BoxShadow(
+                                  color: Colors.tealAccent.withOpacity(0.5),
+                                  blurRadius: 10)
                             ],
                           ),
                         ),
@@ -88,23 +89,26 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
                     },
                   );
                 }
-                return const SizedBox(); // Sembunyikan animasi jika sedang lihat foto
+                return const SizedBox();
               }),
 
+              // 3. HEADER "ARAHKAN KE OBJEK SAMPAH"
               Positioned(
                 top: 50,
                 left: 0,
                 right: 0,
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
                       color: Colors.black54,
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: const Text(
                       "ARAHKAN KE OBJEK SAMPAH",
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -115,7 +119,6 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
                 top: 50,
                 right: 20,
                 child: Obx(() {
-                  // Jika sedang mode galeri, tampilkan tombol "X" (Close)
                   if (controller.selectedImagePath.value.isNotEmpty) {
                     return CircleAvatar(
                       backgroundColor: Colors.white,
@@ -125,7 +128,6 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
                       ),
                     );
                   }
-                  // Jika mode kamera, tampilkan tombol "Galeri"
                   return CircleAvatar(
                     backgroundColor: Colors.white,
                     child: IconButton(
@@ -136,6 +138,7 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
                 }),
               ),
 
+              // 5. PANEL HASIL DETEKSI (Di Bawah Layar)
               Positioned(
                 bottom: 20,
                 left: 20,
@@ -145,46 +148,78 @@ class _ScanPageState extends State<ScanPage> with SingleTickerProviderStateMixin
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.95),
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
+                    boxShadow: const [
                       BoxShadow(color: Colors.black26, blurRadius: 10)
                     ],
                   ),
-                  child: Obx(() => Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        controller.label.value.isEmpty 
-                          ? "Mencari..." 
-                          : controller.label.value.toUpperCase(),
-                        style: TextStyle(
-                          color: controller.confidence.value > 0.5 ? Colors.teal[800] : Colors.grey,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      if (controller.description.value.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.teal[50],
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            controller.description.value,
-                            style: TextStyle(color: Colors.teal[900], fontSize: 14),
-                            textAlign: TextAlign.center,
+                  child: Obx(() {
+                    // --- KODE BARU: Perhitungan Persentase ---
+                    String persenAkurasi =
+                        (controller.confidence.value * 100).toStringAsFixed(0) +
+                            "%";
+                    bool isDetected = controller.label.value.isNotEmpty &&
+                        controller.label.value != "Tidak Dikenali";
+
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // --- Nama Sampah ---
+                        Text(
+                          controller.label.value.isEmpty
+                              ? "Mencari..."
+                              : controller.label.value.toUpperCase(),
+                          style: TextStyle(
+                            color: controller.confidence.value > 0.5
+                                ? Colors.teal[800]
+                                : Colors.grey,
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
-                      const SizedBox(height: 10),
-                      if (controller.confidence.value > 0)
-                        LinearProgressIndicator(
-                          value: controller.confidence.value,
-                          color: Colors.teal,
-                          backgroundColor: Colors.grey[200],
-                        ),
-                    ],
-                  )),
+
+                        // --- KODE BARU: Teks Persentase Akurasi ---
+                        if (isDetected) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            "Tingkat Akurasi: $persenAkurasi",
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black54, // Warna abu-abu gelap
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: 8),
+
+                        // --- Kotak Deskripsi ---
+                        if (controller.description.value.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.teal[50],
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              controller.description.value,
+                              style: TextStyle(
+                                  color: Colors.teal[900], fontSize: 14),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+
+                        const SizedBox(height: 10),
+
+                        // --- Garis Progress Bar Hijau ---
+                        if (controller.confidence.value > 0)
+                          LinearProgressIndicator(
+                            value: controller.confidence.value,
+                            color: Colors.teal,
+                            backgroundColor: Colors.grey[200],
+                          ),
+                      ],
+                    );
+                  }),
                 ),
               ),
             ],

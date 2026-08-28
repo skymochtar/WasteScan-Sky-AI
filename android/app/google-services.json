@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "458673533135",
+    "project_id": "wastescan-sky",
+    "storage_bucket": "wastescan-sky.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:458673533135:android:0e385a356f5cc66c5707ba",
+        "android_client_info": {
+          "package_name": "com.example.image_recognition"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD_ZwE_j12cKowCU-OUcZXTKgXvjGKaqWc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,9 +1,13 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Tambahan Import Firebase Auth
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'modules/home/dashboard_page.dart';
+import 'package:image_recognition/auth/login_page.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 
@@ -13,12 +17,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'WasteScan Sky AI', 
+      title: 'WasteScan Sky AI',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.teal, 
+          seedColor: Colors.teal,
           brightness: Brightness.light,
         ),
       ),
@@ -38,9 +42,23 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    _checkLoginState(); // Memanggil fungsi pengecekan sesi
+  }
+
+  // Fungsi Logika Pengecekan Sesi Firebase
+  void _checkLoginState() {
     // Timer 3 detik sebelum masuk ke aplikasi
     Future.delayed(const Duration(seconds: 3), () {
-      Get.off(() => const DashboardPage());
+      // Mengecek apakah ada user yang sedang login di perangkat ini
+      User? currentUser = FirebaseAuth.instance.currentUser;
+
+      if (currentUser != null) {
+        // Jika sesi masih ada (sudah login), lempar ke Beranda
+        Get.offAll(() => const DashboardPage());
+      } else {
+        // Jika belum login atau sudah logout, lempar ke Halaman Login
+        Get.offAll(() => LoginPage());
+      }
     });
   }
 
@@ -73,7 +91,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
                 child: const Icon(
                   Icons.recycling_rounded,
-                  size: 120, 
+                  size: 120,
                   color: Colors.white,
                 ),
               ),
@@ -82,7 +100,7 @@ class _SplashScreenState extends State<SplashScreen> {
               const Text(
                 "WasteScan Sky AI",
                 style: TextStyle(
-                  fontSize: 32, 
+                  fontSize: 32,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                   letterSpacing: 2.0,
@@ -110,7 +128,7 @@ class _SplashScreenState extends State<SplashScreen> {
               // Loading Indicator Putih
               const CircularProgressIndicator(
                 color: Colors.white,
-                strokeWidth: 3, // 
+                strokeWidth: 3,
               ),
 
               // Versi Aplikasi di bawah

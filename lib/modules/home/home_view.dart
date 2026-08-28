@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'dashboard_page.dart'; 
+import 'dashboard_page.dart';
+import '../../auth/auth_controller.dart'; // Mengimpor AuthController
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -8,9 +9,11 @@ class HomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final DashboardController dashboardController = Get.find();
+    // Memanggil AuthController untuk mendapatkan nama & fungsi logout
+    final AuthController authController = Get.put(AuthController());
 
     return Scaffold(
-      backgroundColor: Colors.grey[50], // Background agak abu terang
+      backgroundColor: Colors.grey[50],
       body: SafeArea(
         child: SingleChildScrollView(
           // Agar bisa di-scroll di layar kecil
@@ -20,26 +23,35 @@ class HomeView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 10),
-                // Header Profil / Sambutan
+
+                // Header Profil & Tombol Logout
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "Halo, Sobat Lingkungan! 👋",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                        // Teks otomatis berubah sesuai nama user yang login
+                        Obx(() {
+                          String nama = authController.userName.value;
+                          // Jika nama masih kosong dari Firebase, gunakan nama default
+                          if (nama.isEmpty) {
+                            nama = "Sobat Lingkungan";
+                          }
+                          return Text(
+                            "Halo, $nama! 👋",
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          );
+                        }),
                         const SizedBox(height: 5),
                         const Text(
                           "WasteScan Sky AI",
                           style: TextStyle(
-                            fontSize: 26, 
+                            fontSize: 26,
                             fontWeight: FontWeight.bold,
                             color: Colors.teal,
                             letterSpacing: 0.5,
@@ -47,22 +59,21 @@ class HomeView extends StatelessWidget {
                         ),
                       ],
                     ),
-                    // Avatar kecil (hiasan)
+
+                    // Tombol Logout
                     Container(
-                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.teal.withOpacity(0.1),
+                        color: Colors.redAccent.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.teal.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
                       ),
-                      child:
-                          const Icon(Icons.eco, color: Colors.teal, size: 28),
+                      child: IconButton(
+                        icon: const Icon(Icons.logout_rounded,
+                            color: Colors.redAccent, size: 24),
+                        onPressed: () {
+                          authController.logout(); // Memanggil fungsi keluar
+                        },
+                        tooltip: "Keluar",
+                      ),
                     ),
                   ],
                 ),
@@ -75,17 +86,14 @@ class HomeView extends StatelessWidget {
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [
-                        Colors.teal,
-                        Colors.greenAccent
-                      ], 
+                      colors: [Colors.teal, Colors.greenAccent],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(25),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.teal.withOpacity(0.4),
+                        color: Colors.teal.withValues(alpha: 0.4),
                         blurRadius: 15,
                         offset: const Offset(0, 8),
                       ),
@@ -98,7 +106,7 @@ class HomeView extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: const Text(
@@ -112,7 +120,7 @@ class HomeView extends StatelessWidget {
                       ),
                       const SizedBox(height: 15),
                       const Text(
-                        "Deteksi Sampah Cerdas", 
+                        "Deteksi Sampah Cerdas",
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -231,13 +239,13 @@ class HomeView extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.08),
+              color: Colors.grey.withValues(alpha: 0.08),
               blurRadius: 20,
               spreadRadius: 0,
               offset: const Offset(0, 4),
             ),
           ],
-          border: Border.all(color: Colors.grey.withOpacity(0.1)),
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,7 +253,7 @@ class HomeView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(15),
               ),
               child: Icon(icon, color: color, size: 32),
